@@ -20,7 +20,7 @@ output:
 def move(source, destination):
     if not os.path.exists(destination):
         os.makedirs(destination)
-    shutil.move(source, destination + "/" + source)
+    shutil.move(source, destination)
 
 """
 Function: computeSobelMag
@@ -251,7 +251,7 @@ def preprocess(path_to_vids):
 
             # Set source and destination
             source = vid[0:len(vid)-3] + "avi"
-            destination = "preprocessed_data" + path[4:]
+            destination = "preprocessed_data" + path[4:] + "/" + source
 
             if ((vid_array.shape[1], vid_array.shape[2], 3) == (H, W, 3)):
                 # Open video writer
@@ -309,10 +309,12 @@ def gatherDataAsArray(path_to_vids, path_to_save, mode='load'):
         X = []
         for path, subdirs, files in os.walk(path_to_vids):
             for vid in files:
+                if (vid == '.DS_Store'):
+                    continue
                 arr = convertVidToArray(path + '/' + vid, N_frames)
                 arr = np.transpose(arr, axes=(3, 0, 1, 2))
-                print(files)
-                X.append(arr)
+                y = path[len(path_to_vids)+1::]
+                X.append((arr, y))
 
         X = np.asarray(X)
 
@@ -322,14 +324,29 @@ def gatherDataAsArray(path_to_vids, path_to_save, mode='load'):
 
     return X
 
-def normalizeData(array_of_vids):
-    N, C, F, H, W = array_of_vids.shape
+def normalizeData(path_to_array_of_vids, path_to_save):
+    array_of_vids = pickle.load(open(path_to_array_of_vids, 'rb'))
 
-    means = np.mean(array_of_vids, axes=(3, 4))
-    stds = np.std(array_of_vids, axes=(3, 4))
+    N = array_of_vids.shape[0]
+    C, F, H, W = array_of_vids[0][0].shape
+
+    stacked_vids = np.zeros((N, C, F, H, W))
+
+    for n in range(N):
+        stacked_vids[n] = array_of_vids[n][0]
+
+    means = np.mean(stacked_vids, axis=(3, 4))
+    stds = np.std(stacked_vids, axis=(3, 4))
     stds = np.where(stds == 0, 1, stds)
 
-    normData = (array_of_vids - means[:, :, :, None, None]) / stds[:, :, :, None, None]
+    norm_vids = (stacked_vids - means[:, :, :, None, None]) / stds[:, :, :, None, None]
+
+    norm_data = np.copy(array_of_vids)
+
+    for n in range(N):
+        norm_data[n] = (norm_vids[n], array_of_vids[n][1])
+
+    pickle.dump(norm_data, open(path_to_save, 'wb'))
 
 def removeDuplicates(path_to_vids):
     for path, subdirs, files in os.walk(path_to_vids):
@@ -340,6 +357,9 @@ def removeDuplicates(path_to_vids):
 def screenData(path_to_vids):
     paths_to_remove = []
     for path, subdirs, files in os.walk(path_to_vids):
+        if (len(files) == 0):
+            shutil.rmtree(path)
+            continue
         if (files[0] == '.DS_Store'):
             continue
 

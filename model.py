@@ -1,3 +1,13 @@
+import torch
+import torch.nn as nn
+from torch.nn import init
+import torch.nn.functional as F
+import torch.optim as optim
+from torch.utils.data import DataLoader
+from torch.utils.data import sampler
+import torchvision.datasets as dset
+import torchvision.transforms as T
+import numpy as np
 from preprocess import *
 
 """
@@ -210,7 +220,29 @@ def train(m, data_train, data_val, path_to_model, opt_params, num_epochs=10, sho
 
     # TODO: may need to change location of this since this is written specific for EE class
     # Plot the loss
-    plotLoss(loss_array, "../../Plots/" + path_to_model[12:] + ".png")
+    # plotLoss(loss_array, "../../Plots/" + path_to_model[12:] + ".png")
+    #
+    # # Plot the accuracy
+    # plotAccuracy(acc_train, acc_val, "../../Plots/" + path_to_model[12:] + "_accuracies.png")
 
-    # Plot the accuracy
-    plotAccuracy(acc_train, acc_val, "../../Plots/" + path_to_model[12:] + "_accuracies.png")
+# TODO: maybe should use a different means of splitting data
+def splitData(path_to_vids):
+    train_folder, val_folder, test_folder = "train", "val", "test"
+
+    for path, subdirs, files in os.walk(path_to_vids):
+        if (files[0] == '.DS_Store'):
+            continue
+
+        num_files = len(files)
+        count = 0
+        for vid in files:
+            if (count < int(0.8 * num_files)): # train
+                move(path + "/" + vid, train_folder + path[len(path_to_vids)::] + "/")
+            elif (count < int(0.9 * num_files)): # val
+                move(path + "/" + vid, val_folder + path[len(path_to_vids)::] + "/")
+            else: # test
+                move(path + "/" + vid, test_folder + path[len(path_to_vids)::] + "/")
+
+            count += 1
+
+        # train, val, test = np.split(np.asarray(files), [int(0.8 * num_files), int(0.1 * num_files)])
