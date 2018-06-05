@@ -232,7 +232,6 @@ def preprocess(path_to_vids):
     N_frames, FPS, H, W = findMinData(path_to_vids)
 
     count = 0
-
     # Cycle through all videos trimming the frames first, then height and width
     for path, subdirs, files in os.walk(path_to_vids):
         for vid in files:
@@ -241,7 +240,7 @@ def preprocess(path_to_vids):
 
             count += 1
 
-            if (count < 725):
+            if (count < 3860):
                 continue
 
             print(count)
