@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 import os
 import shutil
+import pickle
 from skimage import filters
 from skimage import transform
 
@@ -265,6 +266,16 @@ def preprocess(path_to_vids):
                 out.release()
                 move(source, destination)
 
+"""
+Function: countVids
+===================
+Counts the number of videos in path_to_vids.
+===================
+input:
+    path_to_vids: location where the videos are at
+output:
+    count: number of videos in path_to_vids
+"""
 def countVids(path_to_vids):
     count = 0
     for path, subdirs, files in os.walk(path_to_vids):
@@ -272,3 +283,50 @@ def countVids(path_to_vids):
             count += 1
 
     print(count)
+
+"""
+Function: gatherDataAsArray
+===========================
+Returns the data in path_to_vids in an array format of shape (N, C, F, H, W).
+===========================
+input:
+    path_to_vids: path to where the videos are located
+    path_to_save: path to where we want to save the data or where the data is
+    mode: determines whether we save data or load data
+        'save': says we need to save the data
+        'load': says we need to load the data
+output:
+    X: data in array format
+"""
+def gatherDataAsArray(path_to_vids, path_to_save, mode='load'):
+    X = None
+
+    if (mode == 'load'):
+        X = pickle.load(open(path_to_save, 'rb'))
+    elif (mode == 'save'):
+        # Find minimum N_frames, FPS, H, and W
+        N_frames, FPS, H, W = findMinData(path_to_vids)
+
+        X = []
+        for path, subdirs, files in os.walk(path_to_vids):
+            for vid in files:
+                arr = convertVidToArray(path + '/' + vid, N_frames)
+                arr = np.transpose(arr, axes=(3, 0, 1, 2))
+                X.append(arr)
+
+        X = np.asarray(X)
+
+        pickle.dump(X, open(path_to_save, 'wb'))
+    else:
+        print("Incorrect mode input.")
+
+    return X
+
+def normalizeData(array_of_vids):
+    N, C, F, H, W = array_of_vids.shape
+
+    means = np.mean(array_of_vids, axes=(3, 4))
+    stds = np.std(array_of_vids, axes=(3, 4))
+    stds = np.where(stds == 0, 1, stds)
+
+    normData = (array_of_vids - means[:, :, :, None, None]) / stds[:, :, :, None, None]
