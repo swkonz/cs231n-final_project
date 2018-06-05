@@ -369,6 +369,10 @@ def removeDuplicates(path_to_vids):
 def screenData(path_to_vids):
     paths_to_remove = []
     for path, subdirs, files in os.walk(path_to_vids):
+        if (len(files) == 0):
+            paths_to_remove.append(path)
+            continue
+
         if (files[0] == '.DS_Store'):
             continue
 
