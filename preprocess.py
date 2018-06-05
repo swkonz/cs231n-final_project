@@ -22,6 +22,11 @@ def move(source, destination):
         os.makedirs(destination)
     shutil.move(source, destination)
 
+def copy(source, destination):
+    if not os.path.exists(destination):
+        os.makedirs(destination)
+    shutil.copy(source, destination)
+
 """
 Function: computeSobelMag
 =========================
@@ -161,7 +166,7 @@ def findMinData(path_to_vids):
     # Search through all videos to find smallest frames, height, and width
     for path, subdirs, files in os.walk(path_to_vids):
         for vid in files:
-            if (vid == ".DS_Store"):
+            if (vid == '.DS_Store'):
                 continue
 
             cap = cv2.VideoCapture(path + '/' + vid)
@@ -236,7 +241,7 @@ def preprocess(path_to_vids):
     # Cycle through all videos trimming the frames first, then height and width
     for path, subdirs, files in os.walk(path_to_vids):
         for vid in files:
-            if (vid == ".DS_Store"):
+            if (vid == '.DS_Store'):
                 continue
 
             count += 1
@@ -349,17 +354,21 @@ def normalizeData(path_to_array_of_vids, path_to_save):
     pickle.dump(norm_data, open(path_to_save, 'wb'))
 
 def removeDuplicates(path_to_vids):
+    vids_to_remove = []
     for path, subdirs, files in os.walk(path_to_vids):
         for vid in files:
+            if (vid == '.DS_Store'):
+                continue
+
             if (vid.endswith('.mov')):
-                os.remove(path + "/" + vid)
+                vids_to_remove.append(path + "/" + vid)
+
+    for vid in vids_to_remove:
+        os.remove(vid)
 
 def screenData(path_to_vids):
     paths_to_remove = []
     for path, subdirs, files in os.walk(path_to_vids):
-        if (len(files) == 0):
-            shutil.rmtree(path)
-            continue
         if (files[0] == '.DS_Store'):
             continue
 

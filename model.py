@@ -230,18 +230,18 @@ def splitData(path_to_vids):
     train_folder, val_folder, test_folder = "train", "val", "test"
 
     for path, subdirs, files in os.walk(path_to_vids):
-        if (files[0] == '.DS_Store'):
-            continue
-
         num_files = len(files)
         count = 0
         for vid in files:
-            if (count < int(0.8 * num_files)): # train
-                move(path + "/" + vid, train_folder + path[len(path_to_vids)::] + "/")
-            elif (count < int(0.9 * num_files)): # val
-                move(path + "/" + vid, val_folder + path[len(path_to_vids)::] + "/")
+            if (vid == '.DS_Store'):
+                continue
+
+            if (count < int(0.8 * num_files) - 1): # train
+                copy(path + "/" + vid, train_folder + path[len(path_to_vids)::] + "/")
+            elif (count < int(0.9 * num_files) + (num_files - 1) * int(0.9 * num_files)): # val
+                copy(path + "/" + vid, val_folder + path[len(path_to_vids)::] + "/")
             else: # test
-                move(path + "/" + vid, test_folder + path[len(path_to_vids)::] + "/")
+                copy(path + "/" + vid, test_folder + path[len(path_to_vids)::] + "/")
 
             count += 1
 
