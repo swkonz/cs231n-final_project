@@ -3,7 +3,7 @@ from preprocess import *
 """
 Class: Flatten
 ==============
-Flattens a tensor of shape (N, C, H, W) to be of shape (N, C*H*W).
+Flattens a tensor of shape (N, F, C, H, W) to be of shape (N, F*C*H*W).
 ==============
 """
 class Flatten(nn.Module):

@@ -322,3 +322,12 @@ def gatherDataAsArray(path_to_vids, path_to_save, mode='load'):
         print("Incorrect mode input.")
 
     return X
+
+def normalizeData(array_of_vids):
+    N, C, F, H, W = array_of_vids.shape
+
+    means = np.mean(array_of_vids, axes=(3, 4))
+    stds = np.std(array_of_vids, axes=(3, 4))
+    stds = np.where(stds == 0, 1, stds)
+
+    normData = (array_of_vids - means[:, :, :, None, None]) / stds[:, :, :, None, None]
