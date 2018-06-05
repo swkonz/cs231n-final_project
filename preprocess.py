@@ -241,9 +241,6 @@ def preprocess(path_to_vids):
 
             count += 1
 
-            if (count < 3860):
-                continue
-
             print(count)
 
             # Get an array of the video
@@ -280,6 +277,8 @@ def countVids(path_to_vids):
     count = 0
     for path, subdirs, files in os.walk(path_to_vids):
         for vid in files:
+            if (vid == '.DS_Store'):
+                continue
             count += 1
 
     print(count)
@@ -312,6 +311,7 @@ def gatherDataAsArray(path_to_vids, path_to_save, mode='load'):
             for vid in files:
                 arr = convertVidToArray(path + '/' + vid, N_frames)
                 arr = np.transpose(arr, axes=(3, 0, 1, 2))
+                print(files)
                 X.append(arr)
 
         X = np.asarray(X)
@@ -330,3 +330,21 @@ def normalizeData(array_of_vids):
     stds = np.where(stds == 0, 1, stds)
 
     normData = (array_of_vids - means[:, :, :, None, None]) / stds[:, :, :, None, None]
+
+def removeDuplicates(path_to_vids):
+    for path, subdirs, files in os.walk(path_to_vids):
+        for vid in files:
+            if (vid.endswith('.mov')):
+                os.remove(path + "/" + vid)
+
+def screenData(path_to_vids):
+    paths_to_remove = []
+    for path, subdirs, files in os.walk(path_to_vids):
+        if (files[0] == '.DS_Store'):
+            continue
+
+        if (len(files) < 4):
+            paths_to_remove.append(path)
+
+    for path in paths_to_remove:
+        shutil.rmtree(path)
