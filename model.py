@@ -83,7 +83,7 @@ def initializeWeights(m):
 """
 Function: defineModel
 ==================
-Constructs a model for eye tracking.
+Constructs a model for ASL classification.
 ==================
 input:
     H: height of imgs
@@ -95,7 +95,20 @@ output:
 def defineModel(H, W, num_classes):
 
     m = nn.Sequential(
-        # TODO: insert stuff here
+        nn.Conv2d(1, 32, 7, stride=1, padding=3),
+        nn.ReLU(),
+        nn.MaxPool2d(2),
+        nn.Conv2d(32, 32, 5, stride=1, padding=2),
+        nn.ReLU(),
+        nn.MaxPool2d(2),
+        nn.Conv2d(32, 64, 3, stride=1, padding=1),
+        nn.ReLU(),
+        nn.MaxPool2d(2),
+        nn.Conv2d(64, 64, 3, stride=1, padding=1),
+        nn.ReLU(),
+        nn.MaxPool2d(2),
+        Flatten(),
+        nn.Linear(11*41, num_classes)
     )
 
     m.apply(initializeWeights)
@@ -113,7 +126,7 @@ input:
 output:
     None
 """
-def checkAccuracy(m, data_val):
+def checkAccuracy(m, valX, valY):
     num_correct = 0
     num_samples = 0
 
@@ -121,12 +134,8 @@ def checkAccuracy(m, data_val):
     m.eval()
 
     with torch.no_grad():
-        for x, y in data_val:
-            # Convert x to correct data structure
-            C, H, W = x.shape
-            x = torch.tensor(x.reshape(1, C, H, W))
-            x = x.to(dtype=torch.float32)
-            y = torch.tensor([y], dtype=torch.long)
+        for c in range(len(valX)):
+            x, y = valX[c], valY[c]
 
             # Get scores
             scores = m(x)
@@ -164,7 +173,8 @@ input:
 output:
     None
 """
-def train(m, data_train, data_val, path_to_model, opt_params, num_epochs=10, show_every=500):
+def train(m, trainX, trainY, valX, valY, opt_params, model_name, path_to_model="../Models/",
+          path_to_loss="../Plots/Loss/", path_to_acc="../Plots/Accuracy/", num_epochs=1, show_every=500):
     print("=====Training=====")
 
     iter_count = 0
@@ -176,12 +186,8 @@ def train(m, data_train, data_val, path_to_model, opt_params, num_epochs=10, sho
     acc_val = np.zeros(num_epochs, dtype=np.float)
 
     for epoch in range(num_epochs):
-        for c, (x, y) in enumerate(data_train):
-            # Convert x to correct data structure
-            C, H, W = x.shape
-            x = torch.tensor(x.reshape(1, C, H, W))
-            x = x.to(dtype=torch.float32)
-            y = torch.tensor([y], dtype=torch.long)
+        for c in range(len(trainX)):
+            x, y = trainX[c], trainY[c]
 
             # Put model into training mode
             m.train()
@@ -207,7 +213,7 @@ def train(m, data_train, data_val, path_to_model, opt_params, num_epochs=10, sho
             # Print the update of the loss
             if (iter_count % show_every == 0):
                 print('Iteration %d, loss = %.4f' % (iter_count, loss.item()))
-                checkAccuracy(m, data_val)
+                checkAccuracy(m, valX, valY)
                 print()
 
             iter_count += 1
@@ -215,15 +221,37 @@ def train(m, data_train, data_val, path_to_model, opt_params, num_epochs=10, sho
         acc_train[epoch] = checkAccuracy(m, data_train)
         acc_val[epoch] = checkAccuracy(m, data_val)
 
-    # Save model
-    saveData(m, path_to_model)
-
-    # TODO: may need to change location of this since this is written specific for EE class
-    # Plot the loss
-    # plotLoss(loss_array, "../../Plots/" + path_to_model[12:] + ".png")
+    # # Save model
+    # saveData(m, path_to_model + model_name)
+    #
+    # # Plot the loss
+    # plotLoss(loss_array, path_to_loss + model_name + ".png")
     #
     # # Plot the accuracy
-    # plotAccuracy(acc_train, acc_val, "../../Plots/" + path_to_model[12:] + "_accuracies.png")
+    # plotAccuracy(acc_train, acc_val, path_to_acc + model_name + ".png")
+
+def model(mode, path_to_model="../Models/", opt_params=('adam', 1e-3, 0.9, (0.5, 0.999), 0.9)):
+    if (mode == 'train'):
+        trainX, trainY = gatherDataAsArray("train", "", mode='save')
+        print("finished gathering train")
+        valX, valY = gatherDataAsArray("val", "", mode='save')
+        print("finished gathering val")
+
+        trainX, trainY = reformData(trainX, trainY)
+        valX, valY = reformData(valX, valY)
+        print("finished reforming data")
+
+        _, num_classes = np.unique(trainY, return_counts=True)
+        H, W = 656, 176
+
+        model_name = "model_test"
+
+        m = defineModel(H, W, num_classes)
+
+        train(m, trainX, trainY, valX, valY, opt_params, model_name)
+    elif (mode == 'test'):
+        pass
+
 
 def splitData(path_to_vids):
     train_folder, val_folder, test_folder = "train", "val", "test"
@@ -232,12 +260,8 @@ def splitData(path_to_vids):
         if (files[0] == '.DS_Store'):
             continue
 
-        num_files = len(files)
-
-        train_len = int(0.8*num_files)-1
-        val_len = train_len + int(0.1*num_files)+1
-
-        train, val, test = np.split(np.asarray(files), [train_len, val_len])
+        val, test, train = np.split(np.asarray(files), [1, 2])
+        assert(len(train) > 0 and len(val) > 0 and len(test) > 0), "wrong dataSplit"
 
         for vid in train:
             copy(path + "/" + vid, train_folder + path[len(path_to_vids)::] + "/")
@@ -247,3 +271,22 @@ def splitData(path_to_vids):
 
         for vid in test:
             copy(path + "/" + vid, test_folder + path[len(path_to_vids)::] + "/")
+
+"""
+Function: reformData
+====================
+Converts the tuple of numpy arrays to tuple of tensors.
+====================
+input:
+    data: tuple of numpy arrays
+output:
+    newData: tuple of tensors
+"""
+def reformData(dataX, dataY):
+    N, F, H, W = dataX.shape
+
+    newDataX = torch.tensor(dataX)
+    newDataX = newDataX.to(dtype=torch.float32)
+    newDataY = torch.tensor(dataY, dtype=torch.long)
+
+    return newDataX, newDataY

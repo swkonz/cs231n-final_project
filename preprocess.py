@@ -203,7 +203,7 @@ def convertVidToArray(path_to_vid, N_frames):
     # Calculate the number of frames to cut from front and back
     frames_to_cut = 0 if (frames == N_frames) else frames - N_frames
 
-    vid = np.zeros((frames - frames_to_cut, height, width, 3))
+    vid = np.zeros((frames - frames_to_cut, height, width))
 
     if (cap.isOpened()):
         cur_frame = 0
@@ -211,7 +211,7 @@ def convertVidToArray(path_to_vid, N_frames):
             ret, frame = cap.read()
 
             if (ret):
-                vid[cur_frame] = frame
+                vid[cur_frame] = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 cur_frame += 1
             else:
                 break
@@ -280,18 +280,24 @@ output:
 """
 def countVids(path_to_vids):
     count = 0
+    num_labels = 0
     for path, subdirs, files in os.walk(path_to_vids):
+        if (len(files) == 0):
+            continue
+        if (files[0] == '.DS_Store'):
+            continue
+        num_labels += 1
         for vid in files:
             if (vid == '.DS_Store'):
                 continue
             count += 1
 
-    print(count)
+    print(count, num_labels)
 
 """
 Function: gatherDataAsArray
 ===========================
-Returns the data in path_to_vids in an array format of shape (N, C, F, H, W).
+Returns the data in path_to_vids in an array format of shape (N, F, H, W).
 ===========================
 input:
     path_to_vids: path to where the videos are located
@@ -303,55 +309,45 @@ output:
     X: data in array format
 """
 def gatherDataAsArray(path_to_vids, path_to_save, mode='load'):
-    X = None
+    X, y = None, None
 
     if (mode == 'load'):
-        X = pickle.load(open(path_to_save, 'rb'))
+        X = pickle.load(open(path_to_save + "X", 'rb'))
+        y = pickle.load(open(path_to_save + "y", 'rb'))
     elif (mode == 'save'):
         # Find minimum N_frames, FPS, H, and W
         N_frames, FPS, H, W = findMinData(path_to_vids)
 
-        X = []
+        X, y = [], []
         for path, subdirs, files in os.walk(path_to_vids):
             for vid in files:
                 if (vid == '.DS_Store'):
                     continue
-                arr = convertVidToArray(path + '/' + vid, N_frames)
-                arr = np.transpose(arr, axes=(3, 0, 1, 2))
-                y = path[len(path_to_vids)+1::]
-                X.append((arr, y))
+                X.append(convertVidToArray(path + '/' + vid, N_frames))
+                y.append(path[len(path_to_vids)+1::])
 
-        X = np.asarray(X)
+        X = normalizeData(np.asarray(X))
+        y = np.asarray(y)
 
-        pickle.dump(X, open(path_to_save, 'wb'))
+        print("savingX")
+        numpy.save(path_to_save + "X", X)
+        print("savignY")
+        numpy.save(path_to_save + "y", y)
+
+        # pickle.dump(X, open(path_to_save + "X", 'wb'))
+        # pickle.dump(y, open(path_to_save + "y", 'wb'))
     else:
         print("Incorrect mode input.")
 
-    return X
+    return X, y
 
-def normalizeData(path_to_array_of_vids, path_to_save):
-    array_of_vids = pickle.load(open(path_to_array_of_vids, 'rb'))
-
-    N = array_of_vids.shape[0]
-    C, F, H, W = array_of_vids[0][0].shape
-
-    stacked_vids = np.zeros((N, C, F, H, W))
-
-    for n in range(N):
-        stacked_vids[n] = array_of_vids[n][0]
-
-    means = np.mean(stacked_vids, axis=(3, 4))
-    stds = np.std(stacked_vids, axis=(3, 4))
+def normalizeData(array_of_vids):
+    print("normalizing data")
+    means = np.mean(array_of_vids, axis=(2, 3))
+    stds = np.std(array_of_vids, axis=(2, 3))
     stds = np.where(stds == 0, 1, stds)
 
-    norm_vids = (stacked_vids - means[:, :, :, None, None]) / stds[:, :, :, None, None]
-
-    norm_data = np.copy(array_of_vids)
-
-    for n in range(N):
-        norm_data[n] = (norm_vids[n], array_of_vids[n][1])
-
-    pickle.dump(norm_data, open(path_to_save, 'wb'))
+    norm_vids = (array_of_vids - means[:, :, None, None]) / stds[:, :, None, None]
 
 def removeDuplicates(path_to_vids):
     vids_to_remove = []
@@ -376,7 +372,7 @@ def screenData(path_to_vids):
         if (files[0] == '.DS_Store'):
             continue
 
-        if (len(files) < 4):
+        if (len(files) < 6):
             paths_to_remove.append(path)
 
     for path in paths_to_remove:
