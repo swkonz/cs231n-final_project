@@ -326,16 +326,12 @@ def gatherDataAsArray(path_to_vids, path_to_save, mode='load'):
                 X.append(convertVidToArray(path + '/' + vid, N_frames))
                 y.append(path[len(path_to_vids)+1::])
 
-        X = normalizeData(np.asarray(X))
+        X = normalizeData(np.asarray(X, dtype=np.uint8))
         y = np.asarray(y)
 
-        print("savingX")
-        numpy.save(path_to_save + "X", X)
-        print("savignY")
-        numpy.save(path_to_save + "y", y)
-
-        # pickle.dump(X, open(path_to_save + "X", 'wb'))
-        # pickle.dump(y, open(path_to_save + "y", 'wb'))
+        print("saving")
+        pickle.dump(X.astype(np.uint8), open(path_to_save + "X", 'wb'))
+        pickle.dump(y, open(path_to_save + "y", 'wb'))
     else:
         print("Incorrect mode input.")
 
@@ -348,6 +344,8 @@ def normalizeData(array_of_vids):
     stds = np.where(stds == 0, 1, stds)
 
     norm_vids = (array_of_vids - means[:, :, None, None]) / stds[:, :, None, None]
+
+    return norm_vids
 
 def removeDuplicates(path_to_vids):
     vids_to_remove = []

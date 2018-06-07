@@ -232,14 +232,11 @@ def train(m, trainX, trainY, valX, valY, opt_params, model_name, path_to_model="
 
 def model(mode, path_to_model="../Models/", opt_params=('adam', 1e-3, 0.9, (0.5, 0.999), 0.9)):
     if (mode == 'train'):
-        trainX, trainY = gatherDataAsArray("train", "", mode='save')
-        print("finished gathering train")
-        valX, valY = gatherDataAsArray("val", "", mode='save')
-        print("finished gathering val")
+        trainX, trainY = gatherDataAsArray("train", "../Arrays/train")
+        valX, valY = gatherDataAsArray("val", "../Arrays/val")
 
         trainX, trainY = reformData(trainX, trainY)
         valX, valY = reformData(valX, valY)
-        print("finished reforming data")
 
         _, num_classes = np.unique(trainY, return_counts=True)
         H, W = 656, 176
@@ -250,8 +247,11 @@ def model(mode, path_to_model="../Models/", opt_params=('adam', 1e-3, 0.9, (0.5,
 
         train(m, trainX, trainY, valX, valY, opt_params, model_name)
     elif (mode == 'test'):
-        pass
+        testX, testY = gatherDataAsArray("test", "../Arrays/test")
+        testX, testY = reformData(testX, testY)
+        m = pickle.load(open(path_to_model + model_name, 'rb'))
 
+        checkAccuracy(m, testX, testY)
 
 def splitData(path_to_vids):
     train_folder, val_folder, test_folder = "train", "val", "test"
