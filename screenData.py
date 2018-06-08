@@ -6,7 +6,7 @@ import shutil
 Script to remove all directories in dataset that have fewer than 4 videos in them
 '''
 
-pathToVids = "data/"
+pathToVids = "/media/sean/My Passport/data"
 files = os.listdir(pathToVids)
 
 names = set()
@@ -32,4 +32,5 @@ for filename in files:
 # finished going through all data
 print(len(names))
 print(names)
+
 
