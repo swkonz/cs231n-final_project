@@ -1,7 +1,5 @@
 """
 Train our RNN on extracted features or images.
-original from https://github.com/harvitronix/five-video-classification-methods
-
 """
 from keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping, CSVLogger
 from models import ResearchModels

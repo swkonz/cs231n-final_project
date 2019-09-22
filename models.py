@@ -2,6 +2,7 @@
     influenced by https://github.com/udacity/self-driving-car/blob/master/steering-models/community-models/chauffeur/models.py
     and https://blog.coast.ai/five-video-classification-methods-implemented-in-keras-and-tensorflow-99cad29cc0b5
     and https://github.com/kcct-fujimotolab/3DCNN
+    and https://github.com/harvitronix/five-video-classification-methods
 """
 from keras.layers import Dense, Flatten, Dropout, ZeroPadding3D
 from keras.layers.recurrent import LSTM

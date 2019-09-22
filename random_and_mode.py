@@ -1,7 +1,6 @@
 """
 Try to "classify" samples based on random chance and always guessing
 the most popular category.
-from https://github.com/harvitronix/five-video-classification-methods
 """
 import random
 from data import DataSet

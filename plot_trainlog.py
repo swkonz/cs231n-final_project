@@ -1,6 +1,5 @@
 """
 Given a training log file, plot something.
-from https://github.com/harvitronix/five-video-classification-methods
 """
 import csv
 import matplotlib.pyplot as plt

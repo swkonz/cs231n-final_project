@@ -1,6 +1,4 @@
-"""
-    from https://github.com/harvitronix/five-video-classification-methods
-"""
+
 import numpy as np
 import os.path
 from data import DataSet

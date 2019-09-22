@@ -1,7 +1,4 @@
-"""
-Class for managing our data.
-from https://github.com/harvitronix/five-video-classification-methods
-"""
+
 import csv
 import numpy as np
 import random
